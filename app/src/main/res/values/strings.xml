@@ -2,4 +2,8 @@
     <string name="app_name" translatable="false">Smolish</string>
     <string name="file_chooser_title">Choose a file</string>
     <string name="reload">Reload the page</string>
+    <string name="update_title" translatable="false">Update available</string>
+    <string name="update_available" translatable="false">A new version %1$s is available.</string>
+    <string name="update_now" translatable="false">Update</string>
+    <string name="update_later" translatable="false">Later</string>
 </resources>
