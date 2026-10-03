@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">Smolish</string>
+    <string name="file_chooser_title">Выберите файл</string>
+</resources>
