@@ -6,7 +6,10 @@ import android.content.Intent
 import android.graphics.Bitmap
 import android.net.Uri
 import android.os.Bundle
+import android.view.Gravity
+import android.view.MotionEvent
 import android.view.View
+import android.view.ViewConfiguration
 import android.webkit.CookieManager
 import android.webkit.ValueCallback
 import android.webkit.WebChromeClient
@@ -14,11 +17,15 @@ import android.webkit.WebResourceRequest
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import android.widget.FrameLayout
+import android.widget.ImageButton
 import android.widget.ProgressBar
+import kotlin.math.abs
 class MainActivity : Activity() {
 
     private lateinit var webView: WebView
     private lateinit var progress: ProgressBar
+    private lateinit var reloadButton: ImageButton
     private var filePathCallback: ValueCallback<Array<Uri>>? = null
 
     @SuppressLint("SetJavaScriptEnabled")
@@ -28,6 +35,9 @@ class MainActivity : Activity() {
 
         progress = findViewById(R.id.progress)
         webView = findViewById(R.id.web)
+        reloadButton = findViewById(R.id.reload)
+        reloadButton.setOnClickListener { webView.reload() }
+        setupReloadDrag()
 
         val cookieManager = CookieManager.getInstance()
         cookieManager.setAcceptCookie(true)
@@ -89,11 +99,63 @@ class MainActivity : Activity() {
         }
     }
 
+    private fun setupReloadDrag() {
+        val touchSlop = ViewConfiguration.get(this).scaledTouchSlop
+        var downX = 0f
+        var downY = 0f
+        var startLeft = 0
+        var startTop = 0
+        var moved = false
+
+        reloadButton.setOnTouchListener listener@{ v, event ->
+            val container = v.parent as? FrameLayout ?: return@listener false
+            val lp = v.layoutParams as? FrameLayout.LayoutParams ?: return@listener false
+            when (event.actionMasked) {
+                MotionEvent.ACTION_DOWN -> {
+                    downX = event.rawX
+                    downY = event.rawY
+                    startLeft = v.left
+                    startTop = v.top
+                    moved = false
+                    true
+                }
+
+                MotionEvent.ACTION_MOVE -> {
+                    val dx = event.rawX - downX
+                    val dy = event.rawY - downY
+                    if (!moved && (abs(dx) > touchSlop || abs(dy) > touchSlop)) moved = true
+                    if (moved) {
+                        lp.gravity = Gravity.TOP or Gravity.START
+                        lp.leftMargin = (startLeft + dx).toInt().coerceIn(0, maxOf(0, container.width - v.width))
+                        lp.topMargin = (startTop + dy).toInt().coerceIn(0, maxOf(0, container.height - v.height))
+                        v.layoutParams = lp
+                    }
+                    true
+                }
+
+                MotionEvent.ACTION_UP -> {
+                    if (!moved) v.performClick()
+                    true
+                }
+
+                else -> true
+            }
+        }
+    }
+
     private fun route(url: Uri): Boolean {
         val scheme = url.scheme?.lowercase()
         if (scheme == "intent") return openExternally(Intent.parseUri(url.toString(), Intent.URI_INTENT_SCHEME))
-        if (scheme == "http" || scheme == "https") return false
+        if (scheme == "http" || scheme == "https") {
+            if (isAppHost(url.host)) return false
+            return openExternally(Intent(Intent.ACTION_VIEW, url))
+        }
         return openExternally(url)
+    }
+
+    private fun isAppHost(host: String?): Boolean {
+        val h = host?.lowercase() ?: return false
+        return h == HOST || h.endsWith(".$HOST")
     }
 
     private fun openExternally(intent: Intent): Boolean = try {
@@ -109,8 +171,8 @@ class MainActivity : Activity() {
         val data = intent?.data ?: return null
         val scheme = data.scheme?.lowercase()
         if (scheme != "http" && scheme != "https") return null
-        val host = data.host?.lowercase() ?: return null
-        if (host != HOST && host != "www.$HOST" && host != "m.$HOST") return null
+        val host = data.host ?: return null
+        if (!isAppHost(host)) return null
         return data.toString()
     }
 

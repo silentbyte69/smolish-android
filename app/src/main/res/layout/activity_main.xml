@@ -15,11 +15,29 @@
         android:progressDrawable="@drawable/progress_drawable"
         android:visibility="gone" />
 
-    <WebView
-        android:id="@+id/web"
+    <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1"
-        android:background="@color/white" />
+        android:layout_weight="1">
+
+        <WebView
+            android:id="@+id/web"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@color/white" />
+
+        <ImageButton
+            android:id="@+id/reload"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:layout_gravity="bottom|end"
+            android:layout_margin="16dp"
+            android:background="@drawable/bg_reload"
+            android:contentDescription="@string/reload"
+            android:elevation="4dp"
+            android:padding="10dp"
+            android:src="@drawable/ic_reload" />
+
+    </FrameLayout>
 
 </LinearLayout>
